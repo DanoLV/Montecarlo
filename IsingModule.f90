@@ -1,5 +1,5 @@
 MODULE IsingModule
-
+    use, intrinsic:: iso_fortran_env, only: stdout=>output_unit, stdin=>input_unit, stderr=>error_unit
     use ziggurat
     IMPLICIT NONE
  
@@ -42,12 +42,13 @@ MODULE IsingModule
  END SUBROUTINE InitMat
  
 ! Imprimir en pantalla
- SUBROUTINE PrintMat( n, Mat )
-    INTEGER, INTENT(IN):: n, Mat(n,n)
+ SUBROUTINE PrintMat( n, Mat , out)
+    INTEGER, INTENT(IN):: n, Mat(n,n), out
     INTEGER:: j
 
     do j = 1, n
-        print *,Mat(j,:)
+        ! print *,Mat(j,:)
+        write(out,*) Mat(j,:)
     end do 
    
  END SUBROUTINE PrintMat
@@ -137,5 +138,23 @@ FUNCTION Aceptacion ( dE, beta) RESULT (acc)
 	
 RETURN
 END FUNCTION Aceptacion
+
+FUNCTION CalcInitMagnet ( M, N ) RESULT (mm)
+
+	INTEGER, INTENT(IN)   :: N
+	INTEGER, INTENT(IN)	  :: M(N,N)
+	INTEGER               :: mm
+	INTEGER				  :: i, j
+
+	mm = 0
+
+	DO j = 1, N
+		DO i = 1, N
+			mm = mm + M(i,j)
+		END DO
+	END DO
+
+RETURN
+END FUNCTION
 
 END MODULE IsingModule
