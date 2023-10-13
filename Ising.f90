@@ -10,11 +10,28 @@ program ising
     use ziggurat
     use IsingModule
     implicit none
-    logical :: es
+    logical :: es, aceptar
     integer :: seed,i ,j,k,vec(10), num = 0, stepsMC
-    real (kind=8) :: x,y,r(10),rr(3,10), Energia, beta=0, JJ
+    real (kind=8) :: x,y,r(10),rr(3,10), Energia, E_media, Magnetizacion, Mag_media, beta=0, JJ, dE, dM
     INTEGER , allocatable :: M(:,:)
     character(len=50) :: infile = '', outfile = '', string
+
+
+    INTEGER, allocatable  :: M1(:,:)
+
+    ! num=20
+    ! allocate(M1(num,num))
+
+    ! do i=1,num
+    !     do j=1,num
+    !         M1(i,j)=1
+    !     end do
+    ! end do
+
+    ! Energia = CalcEnergy(num, M1, JJ)
+    ! M1(4,4)=-M1(4,4)
+    ! E_media = CalcEnergy(num, M1, JJ)
+    ! print *, Energia, E_media, Energia-E_media
 !************************************************
 ! Manejar argumentos        
     integer :: num_args, ix, stat
@@ -37,7 +54,7 @@ program ising
             case('-i')
                 call get_command_argument(ix + 1,args(ix + 1))
                 read(args(ix+1),*,iostat=stat)  infile
-            ! Archivo de salida de matriz    
+            ! Archivo de salida de matriz    M1(num,num)
             case('-o')
                 call get_command_argument(ix + 1,args(ix + 1))
                 read(args(ix+1),*,iostat=stat)  outfile
@@ -69,12 +86,12 @@ program ising
     if ( beta == 0 ) then 
         beta = 0.01
     end if
-    
+
     if ( num == 0 ) then 
         num = 20
     end if
     if ( stepsMC == 0 ) then 
-        stepsMC = 1000000
+        stepsMC = 10000
     end if
 
     JJ = 1
@@ -98,18 +115,32 @@ program ising
         call InitMat(num,M)             
     end if
 
-    open(unit=100,file=outfile,status='old',iostat=stat)
-    write(100,*) num
-    call PrintMat(num,M, 100)
-    close(100)
+    if ( outfile .ne. '' ) then
+        open(unit=100,file=outfile,status='old',iostat=stat)
+        write(100,*) num
+        call PrintMat(num,M, 100)
+        close(100)
+    end if
 
+    Magnetizacion =  CalcMagnet( num, M )
+    Energia =  CalcEnergy(num, M, JJ)
+    Mag_media = 0
+    E_media = 0
+    dE=0
     do i = 1, stepsMC
-        call SpinFlip(num, M, beta, JJ)
+        ! print * ,i, Energia, CalcEnergy(num, M, JJ),dE
+        call SpinFlip(num, M, beta, JJ, Energia, Magnetizacion, dE, dM, aceptar)
+        E_media = Energia + E_media
+        Mag_media = Magnetizacion + Mag_media
+        
         if ( MOD(i,1000)== 0 ) then
-            Energia = CalcEnergy(num, M, JJ) 
-    
+           print * ,i, Energia, CalcEnergy(num, M, JJ)!, E_media/i, Magnetizacion, Mag_media/i
         end if
     end do
+    print * ,i, Energia, CalcEnergy(num, M, JJ)
+    E_media = E_media / stepsMC
+    Mag_media = Mag_media / stepsMC
+    ! print * , beta, E_media, Mag_media
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ![No TOCAR]

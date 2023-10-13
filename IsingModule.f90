@@ -54,19 +54,29 @@ MODULE IsingModule
  END SUBROUTINE PrintMat
  
 ! Imprimir en pantalla
- SUBROUTINE SpinFlip( n, Mat, beta, JJ)
+ SUBROUTINE SpinFlip( n, Mat, beta, JJ, E, Mag, dE, dMag, actept)
     INTEGER, INTENT(IN):: n
     INTEGER, INTENT(INOUT) :: Mat(n,n)
     real (kind=8), INTENT(IN) :: beta, JJ
-    real (kind=8) :: E_nu
+    real (kind=8), INTENT(INOUT) :: E, Mag
+    real (kind=8), INTENT(INOUT) :: dE, dMag
+    LOGICAL, INTENT(OUT) :: actept
     INTEGER:: i, j
-
+    
+    !Invierto un spin al azar
     i = n*uni()+1
     j = n*uni()+1
-
     Mat(i,j) = -Mat(i,j)
 
-    if ( .NOT.(Aceptacion (CalcDiffEnergy(n, Mat, i, j, JJ), beta)) ) then
+    !Calculo la diferencia de energia
+    dE = CalcDiffEnergy(n, Mat, i, j, JJ)
+    dMag = CalcDiffMag(n, Mat, i, j, JJ)
+    !Acepto o no el cambio y hago operaciones pertinentes
+    actept = Aceptacion (dE, beta)
+    if ( actept ) then
+        E = E - dE
+        Mag = Mag + dMag
+    else
         Mat(i,j) = -Mat(i,j)
     end if 
     
@@ -99,14 +109,30 @@ MODULE IsingModule
     real (kind=8) , INTENT(IN):: JJ
     real (kind=8) :: dE
 
-    dE = -Mat(i,j)*( &
+    dE = 2*2*JJ*Mat(i,j)*( &
+                Mat(i,Indice(n,j,1))+ &
+                Mat(i,Indice(n,j,-1))+ &
+                Mat(Indice(n,i,1),j)+ &
+                Mat(Indice(n,i,-1),j))
+
+    RETURN
+
+ END FUNCTION CalcDiffEnergy
+
+ FUNCTION CalcDiffMag(n, Mat, i,j,JJ) RESULT( dM )
+
+    INTEGER, INTENT(IN):: n, Mat(n,n), i, j
+    real (kind=8) , INTENT(IN):: JJ
+    real (kind=8) :: dM
+
+    dM = - Mat(i,j)*( &
             Mat(i,Indice(n,j,1))+ &
             Mat(i,Indice(n,j,-1))+ &
             Mat(Indice(n,i,1),j)+ &
             Mat(Indice(n,i,-1),j))
 
     RETURN
- END FUNCTION CalcDiffEnergy
+ END FUNCTION CalcDiffMag
 
  FUNCTION Indice (n,i,j) RESULT( k )
     INTEGER :: n,i,j,k
@@ -139,11 +165,11 @@ FUNCTION Aceptacion ( dE, beta) RESULT (acc)
 RETURN
 END FUNCTION Aceptacion
 
-FUNCTION CalcInitMagnet ( M, N ) RESULT (mm)
+FUNCTION CalcMagnet (N, M) RESULT (mm)
 
 	INTEGER, INTENT(IN)   :: N
 	INTEGER, INTENT(IN)	  :: M(N,N)
-	INTEGER               :: mm
+	REAL(kind=8)          :: mm
 	INTEGER				  :: i, j
 
 	mm = 0
