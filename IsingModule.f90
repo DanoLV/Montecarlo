@@ -2,23 +2,6 @@ MODULE IsingModule
     use, intrinsic:: iso_fortran_env, only: stdout=>output_unit, stdin=>input_unit, stderr=>error_unit
     use ziggurat
     IMPLICIT NONE
- 
-    ! PRIVATE
- 
-    ! INTEGER,  PARAMETER  ::  DP=SELECTED_REAL_KIND( 12, 60 )
-    ! REAL(DP), PARAMETER  ::  m1=2147483648.0_DP,   m2=2147483648.0_DP,      &
-    !                          half=0.5_DP
-    ! REAL(DP)             ::  dn=3.442619855899_DP, tn=3.442619855899_DP,    &
-    !                          vn=0.00991256303526217_DP,                     &
-    !                          q,                    de=7.697117470131487_DP, &
-    !                          te=7.697117470131487_DP,                       &
-    !                          ve=0.003949659822581572_DP
-    ! INTEGER,  SAVE       ::  iz, jz, jsr=123456789, kn(0:127),              &
-    !                          ke(0:255), hz
-    ! REAL(DP), SAVE       ::  wn(0:127), fn(0:127), we(0:255), fe(0:255)
-    ! LOGICAL,  SAVE       ::  initialized=.FALSE.
- 
-    ! PUBLIC  :: zigset, shr3, uni, rnor, rexp
 
  CONTAINS
 
@@ -54,30 +37,33 @@ MODULE IsingModule
  END SUBROUTINE PrintMat
  
 ! Imprimir en pantalla
- SUBROUTINE SpinFlip( n, Mat, beta, JJ, E, Mag, dE, dMag, actept)
+ SUBROUTINE SpinFlip( n, Mat, beta, JJ, E, Mag, dE, actept)
     INTEGER, INTENT(IN):: n
     INTEGER, INTENT(INOUT) :: Mat(n,n)
     real (kind=8), INTENT(IN) :: beta, JJ
     real (kind=8), INTENT(INOUT) :: E, Mag
-    real (kind=8), INTENT(INOUT) :: dE, dMag
+    real (kind=8), INTENT(INOUT) :: dE
     LOGICAL, INTENT(OUT) :: actept
     INTEGER:: i, j
+    real (kind=8) :: dMag
     
-    !Invierto un spin al azar
+    !Selecciono indices al azar entre 1 y n
     i = n*uni()+1
     j = n*uni()+1
-    Mat(i,j) = -Mat(i,j)
 
     !Calculo la diferencia de energia
     dE = CalcDiffEnergy(n, Mat, i, j, JJ)
-    dMag = CalcDiffMag(n, Mat, i, j, JJ)
+
     !Acepto o no el cambio y hago operaciones pertinentes
     actept = Aceptacion (dE, beta)
     if ( actept ) then
-        E = E - dE
-        Mag = Mag + dMag
-    else
+        !Calculo nueva energia
+        E = E + dE
+        !invierto el spin
         Mat(i,j) = -Mat(i,j)
+        !Calculo nueva marnetizacion
+        dMag = CalcDiffMag(n, Mat, i, j, JJ)
+        Mag = Mag + dMag
     end if 
     
  END SUBROUTINE SpinFlip
@@ -91,7 +77,7 @@ MODULE IsingModule
 
     do i = 1, n
         do j =1, n
-            Esist = -Mat(i,j)*( &
+            Esist = -0.5*Mat(i,j)*( &
                 Mat(i,Indice(n,j,1))+ &
                 Mat(i,Indice(n,j,-1))+ &
                 Mat(Indice(n,i,1),j)+ &
@@ -109,7 +95,7 @@ MODULE IsingModule
     real (kind=8) , INTENT(IN):: JJ
     real (kind=8) :: dE
 
-    dE = 2*2*JJ*Mat(i,j)*( &
+    dE = 2*JJ*Mat(i,j)*( &
                 Mat(i,Indice(n,j,1))+ &
                 Mat(i,Indice(n,j,-1))+ &
                 Mat(Indice(n,i,1),j)+ &

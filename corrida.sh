@@ -10,5 +10,5 @@ pasomc=10000000
 for ((i=1;i<=$pasobeta;i++))
 do
 beta=$(echo "scale=4; $i*$deltabeta" | bc)
-./Ising -n $n -o "m$i.dat" -s $pasomc -b $beta >> "datos.dat"
+./Ising -n $n -s $pasomc -b $beta > "datos$i.dat"
 done
