@@ -26,8 +26,8 @@ except:
 figure, axis = plt.subplots(3,2) 
 
 y = np.genfromtxt(archivo)
-sigmaE =  y[:,3] #y[:,3] - y[:,1]**2
-sigmaM=   y[:,4] #y[:,4] - y[:,2]**2
+sigmaE =  np.sqrt(np.abs(y[:,3])) #y[:,3] - y[:,1]**2
+sigmaM=  np.sqrt(np.abs( y[:,4])) #y[:,4] - y[:,2]**2
 beta =  y[:,5]
 cv = y[:,6] #(sigmaE[:] * beta**2)/ dim**2
 XMag= y[:,7]

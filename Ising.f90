@@ -11,29 +11,12 @@ program ising
     use IsingModule
     implicit none
     logical :: es, aceptar
-    integer :: seed,i ,j,k,vec(10), num = 0, stepsMC, nstepscalc, nprint, nstepsnosave
-    real (kind=8) :: x,y,r(10),rr(3,10), Energia, E_media, Magnetizacion, Mag_media, beta=0, JJ, dE, dM,difE, &
-                    Mag_cuad, E_cuad, sigmaE, sigmaM, cv, XMag
+    integer :: seed, i, num = 0, stepsMC, nstepscalc, nprint, nstepsnosave
+    real (kind=8) :: Energia, E_media, Magnetizacion, Mag_media, T=0, JJ, dE, &
+                    Mag_cuad, E_cuad, sigmaE2, sigmaM2, cv, XMag, faceptado
     INTEGER , allocatable :: M(:,:)
-    character(len=50) :: infile = '', outfile = '', string
+    character(len=50) :: infile = '', outfile = ''
 
-!************************************************
-! !Probar calculo de energia y diferencia entre 2 matries con un solo cambio de spin
-!     INTEGER, allocatable  :: M1(:,:)
-!     num=20
-!     JJ=1
-!     allocate(M1(num,num))
-!     do i=1,num
-!         do j=1,num
-!             M1(i,j)=1
-!         end do
-!     end do
-!     Energia = CalcEnergy(num, M1, JJ)
-!     difE = CalcDiffEnergy(num, M1, 4,3,JJ)
-!     M1(4,3)=-M1(4,3)
-!     E_media = CalcEnergy(num, M1, JJ)
-
-!     print *, Energia, E_media, Energia-E_media, difE
 !************************************************
 ! Manejar argumentos de linea de comandos
     integer :: num_args, ix, stat
@@ -43,35 +26,35 @@ program ising
     if ( num_args > 0 ) then
         
 
-    allocate(args(num_args))  
+        allocate(args(num_args))  
 
-    do ix = 1, num_args
+        do ix = 1, num_args
 
-        call get_command_argument(ix,args(ix))
+            call get_command_argument(ix,args(ix))
 
-        ! Parser de opciones
-        select case(args(ix))
-            ! dimension de la matriz
-            case('-n')
-                call get_command_argument(ix + 1,args(ix + 1))
-                read(args(ix+1),*,iostat=stat)  num
-            ! Archivo de entrada de matriz
-            case('-i')
-                call get_command_argument(ix + 1,args(ix + 1))
-                read(args(ix+1),*,iostat=stat)  infile
-            ! Archivo de salida de matriz    M1(num,num)
-            case('-o')
-                call get_command_argument(ix + 1,args(ix + 1))
-                read(args(ix+1),*,iostat=stat)  outfile
-            case('-b')
-                call get_command_argument(ix + 1,args(ix + 1))
-                read(args(ix+1),*,iostat=stat)  beta    
-            case('-s')
-                call get_command_argument(ix + 1,args(ix + 1))
-                read(args(ix+1),*,iostat=stat)  stepsMC     
-        end select   
+            ! Parser de opciones
+            select case(args(ix))
+                ! dimension de la matriz
+                case('-n')
+                    call get_command_argument(ix + 1,args(ix + 1))
+                    read(args(ix+1),*,iostat=stat)  num
+                ! Archivo de entrada de matriz
+                case('-i')
+                    call get_command_argument(ix + 1,args(ix + 1))
+                    read(args(ix+1),*,iostat=stat)  infile
+                ! Archivo de salida de matriz    M1(num,num)
+                case('-o')
+                    call get_command_argument(ix + 1,args(ix + 1))
+                    read(args(ix+1),*,iostat=stat)  outfile
+                case('-T')
+                    call get_command_argument(ix + 1,args(ix + 1))
+                    read(args(ix+1),*,iostat=stat)  T    
+                case('-s')
+                    call get_command_argument(ix + 1,args(ix + 1))
+                    read(args(ix+1),*,iostat=stat)  stepsMC     
+            end select   
 
-    end do
+        end do
     end if
 
 !************************************************    
@@ -90,10 +73,11 @@ program ising
     call zigset(seed)
 ![FIN NO TOCAR]    
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !! Inicializar variables
-    if ( beta == 0 ) then 
-        beta = 0.01
+    if ( T == 0 ) then 
+        T = 0.1
     end if
 
     if ( num == 0 ) then 
@@ -108,28 +92,28 @@ program ising
     if ( infile .ne. '' ) then
 
         num = 0
-        print *, infile
         open(unit=100,file=infile,status='old',iostat=stat)
-        print *, num, stat
         read(100,*,iostat=stat) num
-        print *, num, stat
         allocate(M(num,num))
+
         do ix = 1, num
-            print * , ix
+            ! print * , ix
             read(100,*,iostat=stat) M(ix,:)
         end do
+
         close(100)
+        ! call PrintMat(num,M, stdout)
     else
         allocate(M(num,num))
         call InitMat(num,M)             
     end if
 
-    if ( outfile .ne. '' ) then
-        open(unit=100,file=outfile,status='old',iostat=stat)
-        write(100,*) num
-        call PrintMat(num,M, 100)
-        close(100)
-    end if
+    ! if ( outfile .ne. '' ) then
+    !     open(unit=100,file=outfile,status='old',iostat=stat)
+    !     write(100,*) num
+    !     ! call PrintMat(num,M, 100)
+    !     close(100)
+    ! end if
 
     Magnetizacion =  CalcMagnet( num, M )
     Energia =  CalcEnergy(num, M, JJ)
@@ -139,53 +123,67 @@ program ising
     nstepscalc= 200
     nprint = 0
     nstepsnosave= 200000
+    
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !! Pasos de Montecarlo 
-
+    
     !Pasos que no voy a guardar
     do i = 1, nstepsnosave
         ! Dar vuelta spin y calcular nuevos valores de Energia, Magnetizacion, deltas, etc
-        call SpinFlip(num, M, beta, JJ, Energia, Magnetizacion, dE, aceptar)
+        call SpinFlip(num, M, 1/T, JJ, Energia, Magnetizacion, dE, aceptar)
     end do
 
     Magnetizacion =  CalcMagnet( num, M )
     Energia =  CalcEnergy(num, M, JJ)
-    Mag_media =  Magnetizacion/num**2 
-    E_media = Energia 
+    Mag_media =  0 !Magnetizacion/num**2 
+    E_media = 0 !Energia 
     dE=0
+    faceptado = 0
 
     do i = 1, stepsMC
 
         ! Dar vuelta spin y calcular nuevos valores de Energia, Magnetizacion, deltas, etc
-        call SpinFlip(num, M, beta, JJ, Energia, Magnetizacion, dE, aceptar)
+        call SpinFlip(num, M, 1/T, JJ, Energia, Magnetizacion, dE, aceptar)
+        !Acumulo valores
         E_media = Energia + E_media
         Mag_media = Magnetizacion/num**2 + Mag_media
         E_cuad = E_cuad + Energia**2
         Mag_cuad = Mag_cuad + (Magnetizacion/num**2)**2
-        
-        if ( MOD(i,nstepscalc)== 0 ) then
-            E_media = E_media/(nstepscalc+1)
-            E_cuad = E_cuad/(nstepscalc+1)
-            Mag_media = Mag_media/(nstepscalc+1)
-            Mag_cuad = Mag_cuad/(nstepscalc+1)
-            
 
-            sigmaE = sqrt((E_cuad - E_media**2 ))
-            sigmaM = Mag_cuad - Mag_media**2 
-            cv = (sigmaE * beta**2)/ num**2
-            XMag = sigmaM * beta
-            sigmaM = sqrt(sigmaM)
+        if (aceptar ) then
+            faceptado = faceptado + 1
+        end if
+
+        if ( MOD(i,nstepscalc)== 0 ) then
+            !Calculo medias en los pasos dados
+            E_media = E_media/(nstepscalc)
+            E_cuad = E_cuad/(nstepscalc)
+            Mag_media = Mag_media/(nstepscalc)
+            Mag_cuad = Mag_cuad/(nstepscalc)
+            faceptado = faceptado/nstepscalc
+
+            ! sigmaE2 = E_cuad - E_media**2 
+            ! sigmaM2 = Mag_cuad - Mag_media**2 
+            ! cv = (sigmaE2 * (1/T)**2)/ num**2
+            ! XMag = sigmaM2 /T
 
             nprint = nprint + 1
-            print * ,nprint, E_media, Mag_media, sigmaE, sigmaM, beta, cv, XMag !E_cuad/(nstepscalc+1), Mag_cuad/(nstepscalc+1),beta
-            Mag_media =  Magnetizacion/num**2
-            E_media = Energia
-            E_cuad = Energia**2
-            Mag_cuad = (Magnetizacion/num**2)**2
-
+            print * ,nprint, E_media, Mag_media, T, num, faceptado
+            Mag_media =  0!Magnetizacion/num**2
+            E_media = 0!Energia
+            E_cuad = 0!Energia**2
+            Mag_cuad = 0!(Magnetizacion/num**2)**2
+            faceptado = 0
+            
         end if
     end do
 
+    if ( outfile .ne. '' ) then
+        open(unit=100,file=outfile,status='old',iostat=stat)
+        write(100,*) num
+        call PrintMat(num,M, 100)
+        close(100)
+    end if
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ![No TOCAR]
 ! Escribir la última semilla para continuar con la cadena de numeros aleatorios 
