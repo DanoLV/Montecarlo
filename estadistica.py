@@ -33,17 +33,15 @@ for i in range(1,cant+1,1):
 
     # Procesar datos
     T = y[1,3]
-    n = y[1,4]
-    npart= n**2
+    npart= y[1,4]**2
     faceptado = str(np.mean(y[:,5]))
-    npart= n**2
     E_media = str(np.mean(y[:,1])/npart)
     M_media = str(np.mean(y[:,2])/npart)
 
-    VarE_media = np.var(y[:,1]/npart)
-    VarM_media = np.var(y[:,2]/npart)
+    VarE_media = np.var(y[:,1])
+    VarM_media = np.var(y[:,2])
 
-    CV_media = str(VarE_media/(T*n)**2)
+    CV_media = str(VarE_media/(T**2 * npart))
     XM_media = str(npart*VarM_media/T)
 
     T = str(y[1,3])

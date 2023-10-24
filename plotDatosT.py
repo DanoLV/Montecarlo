@@ -64,6 +64,8 @@ axis[a,b].plot(y[:,0],cv[:])
 axis[a,b].set_ylabel('$C_V$')
 axis[a,b].set_xlabel('T')
 axis[a,b].grid(True, which='both')
+# axis[a,b].autoscale() 
+# axis[a,b].set_ylim([0,0.000001])
 axis[a,b].set_xlim([xmin,5])
 
 a=1
@@ -72,7 +74,8 @@ axis[a,b].plot(y[:,0],XMag[:])
 axis[a,b].set_ylabel('$\mathrm{\chi}$')
 axis[a,b].set_xlabel('T')
 axis[a,b].grid(True, which='both')
-axis[a,b].autoscale() 
+# axis[a,b].autoscale() 
+# axis[a,b].set_ylim([0,250])
 axis[a,b].set_xlim([xmin,5])
 
 # Mostrar el grafico

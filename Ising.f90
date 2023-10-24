@@ -12,8 +12,7 @@ program ising
     implicit none
     logical :: es, aceptar
     integer :: seed, i, num = 0, stepsMC=0, nstepscalc, nprint, nstepsnosave=0
-    real (kind=8) :: Energia, E_media, Magnetizacion, Mag_media, T=0, JJ, dE, &
-                    Mag_cuad, E_cuad, faceptado !sigmaE2, sigmaM2, cv, XMag, faceptado
+    real (kind=8) :: Energia, E_media, Magnetizacion, Mag_media, T=0, JJ, faceptado
     INTEGER , allocatable :: M(:,:)
     character(len=100) :: infile = '', outfile = '', msg
 
@@ -129,7 +128,6 @@ program ising
     Energia =  CalcEnergy(num, M, JJ)
     Mag_media =  Magnetizacion/num**2 
     E_media = Energia 
-    dE=0
     nstepscalc= 200
     nprint = 0
     
@@ -139,7 +137,7 @@ program ising
     !Pasos que no voy a guardar y son para termalizar
     do i = 1, nstepsnosave
         ! Dar vuelta spin y calcular nuevos valores de Energia, Magnetizacion, deltas, etc
-        call SpinFlip(num, M, 1/T, JJ, Energia, Magnetizacion, dE, aceptar)
+        call SpinFlip(num, M, 1/T, JJ, Energia, Magnetizacion, aceptar)
     end do
 
     ! Inicializo valores antes de los pasos de MC que se guardan
@@ -147,31 +145,26 @@ program ising
     Energia =  CalcEnergy(num, M, JJ)
     Mag_media =  0 
     E_media = 0 
-    dE=0
     faceptado = 0
 
     do i = 1, stepsMC
 
         ! Dar vuelta spin y calcular nuevos valores de Energia, Magnetizacion, deltas, etc
-        call SpinFlip(num, M, 1/T, JJ, Energia, Magnetizacion, dE, aceptar)
+        call SpinFlip(num, M, 1/T, JJ, Energia, Magnetizacion, aceptar)
         !Acumulo valores
         E_media = Energia + E_media
         Mag_media = Magnetizacion + Mag_media
-        ! E_cuad = E_cuad + Energia**2
-        ! Mag_cuad = Mag_cuad + (Magnetizacion)**2
 
         ! Contabilizar spin flips aceptados
-        if (aceptar ) then
+        if (aceptar) then
             faceptado = faceptado + 1
         end if
 
         ! Cualdo hice nstepscalc pasos hago los calculos a guardar
         if ( MOD(i,nstepscalc)== 0 ) then
             !Calculo medias en los pasos dados
-            E_media = E_media/(nstepscalc)
-            ! E_cuad = E_cuad/(nstepscalc)
-            Mag_media = Mag_media/(nstepscalc)
-            ! Mag_cuad = Mag_cuad/(nstepscalc)
+            E_media = E_media/nstepscalc
+            Mag_media = Mag_media/nstepscalc
             faceptado = faceptado/nstepscalc
 
             nprint = nprint + 1
@@ -180,8 +173,6 @@ program ising
             ! Inicializo valores para el proximo ciclo
             Mag_media =  0
             E_media = 0
-            ! E_cuad = 0
-            ! Mag_cuad = 0
             faceptado = 0
             
         end if

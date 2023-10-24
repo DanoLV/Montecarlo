@@ -37,19 +37,18 @@ MODULE IsingModule
  END SUBROUTINE PrintMat
  
 ! Imprimir en pantalla
- SUBROUTINE SpinFlip( n, Mat, beta, JJ, E, Mag, dE, actept)
+ SUBROUTINE SpinFlip( n, Mat, beta, JJ, E, Mag, actept)
     INTEGER, INTENT(IN):: n
     INTEGER, INTENT(INOUT) :: Mat(n,n)
     real (kind=8), INTENT(IN) :: beta, JJ
     real (kind=8), INTENT(INOUT) :: E, Mag
-    real (kind=8), INTENT(INOUT) :: dE
     LOGICAL, INTENT(OUT) :: actept
     INTEGER:: i, j
-    real (kind=8) :: dMag
+    real (kind=8) :: dMag, dE
     
     !Selecciono indices al azar entre 1 y n
-    i = n*uni()+1
-    j = n*uni()+1
+    i = int(n*uni()+1)
+    j = int(n*uni()+1)
 
     !Calculo la diferencia de energia
     dE = CalcDiffEnergy(n, Mat, i, j, JJ)
@@ -62,7 +61,7 @@ MODULE IsingModule
         !invierto el spin
         Mat(i,j) = -Mat(i,j)
         !Calculo nueva marnetizacion
-        dMag = CalcDiffMag(n, Mat, i, j, JJ)
+        dMag = CalcDiffMag(n, Mat, i, j)
         Mag = Mag + dMag
     end if 
     
@@ -77,7 +76,7 @@ MODULE IsingModule
 
     do i = 1, n
         do j =1, n
-            Esist = -0.5*Mat(i,j)*( &
+            Esist = -0.5*JJ*Mat(i,j)*( &
                 Mat(i,Indice(n,j,1))+ &
                 Mat(i,Indice(n,j,-1))+ &
                 Mat(Indice(n,i,1),j)+ &
@@ -105,17 +104,16 @@ MODULE IsingModule
 
  END FUNCTION CalcDiffEnergy
 
- FUNCTION CalcDiffMag(n, Mat, i,j,JJ) RESULT( dM )
+ FUNCTION CalcDiffMag(n, Mat, i,j) RESULT( dM )
 
     INTEGER, INTENT(IN):: n, Mat(n,n), i, j
-    real (kind=8) , INTENT(IN):: JJ
     real (kind=8) :: dM
 
-    dM = - Mat(i,j)*( &
-            Mat(i,Indice(n,j,1))+ &
-            Mat(i,Indice(n,j,-1))+ &
-            Mat(Indice(n,i,1),j)+ &
-            Mat(Indice(n,i,-1),j))
+    dM = 2*Mat(i,j)!*( &
+            ! Mat(i,Indice(n,j,1))+ &
+            ! Mat(i,Indice(n,j,-1))+ &
+            ! Mat(Indice(n,i,1),j)+ &
+            ! Mat(Indice(n,i,-1),j))
 
     RETURN
  END FUNCTION CalcDiffMag
@@ -134,13 +132,13 @@ MODULE IsingModule
 
  !Acceptance
 FUNCTION Aceptacion ( dE, beta) RESULT (acc)
-
-	REAL (kind=8), INTENT(IN) :: dE, beta
-	LOGICAL :: acc
+    
+    real(kind=8), INTENT(IN) :: dE, beta
+    logical :: acc
 	
-	IF (dE < 0.0) THEN
+    if(dE < 0.0) THEN
 		acc = .TRUE.
-	ELSE
+    else
 		IF (uni()<exp(-beta*dE)) then
 			acc = .TRUE.
 		ELSE
@@ -148,7 +146,8 @@ FUNCTION Aceptacion ( dE, beta) RESULT (acc)
         END IF
 	END IF
 	
-RETURN
+    RETURN
+
 END FUNCTION Aceptacion
 
 FUNCTION CalcMagnet (N, M) RESULT (mm)

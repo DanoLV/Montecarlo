@@ -7,13 +7,13 @@ rm datosEstadisticaT.dat
 clear
 
 # Variacion de temperatura por cada corrida
-deltaT=0.01
+deltaT=0.05
 
 # Dimension de la matriz
-n=2che0
+n=20
 
 # Cantidad de temperaturas a evaluar (archivos creados)
-pasos=500
+pasos=100
 
 # Pasos de montecarlo por temperatura
 pasomc=10000000
